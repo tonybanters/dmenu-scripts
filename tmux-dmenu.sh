@@ -4,16 +4,20 @@ set -eu
 sessions="$(tmux list-sessions -F '#S' 2>/dev/null || true)"
 [ -n "${sessions}" ] || exit 0
 
-rofi_pick_session() {
-  if command -v rofi >/dev/null 2>&1; then
-    rofi -dmenu -i -p 'tmux sessions:' -lines 10 \
-         -kb-row-down "Down,Control+n,j" -kb-row-up "Up,Control+p,k"
-  else
-    dmenu -i -vi -c -bw 3 -l 10 -h 30 -F -p 'tmux sessions:'
-  fi
-}
 dmenu_pick_session() {
-    dmenu -i -vi -c -bw 3 -l 10 -h 30 -F -p 'tmux sessions:'
+    # dmenu -i \
+    #   -c \
+    #   -vi \
+    #   -bw 3 \
+    #   -l 15 \
+    #   -h 40 \
+    #   -F \
+    #   -fn "JetBrainsMono Nerd Font:size=16" \
+    #   -p 'tmux sessions:'
+
+    dmenu -i -c -vi -bw 3 -W 800 -l 30 -h 40 -F -fn "JetBrainsMono Nerd Font:size=16" -p "tmux sessions:"
+
+    # dmenu -i -vi -c -bw 3 -l 10 -h 30 -F -p 'tmux sessions:'
 }
 chosen="$(printf '%s\n' "$sessions" | dmenu_pick_session)"
 

@@ -2,13 +2,13 @@
 set -eu
 
 # Grab only directories inside ~/debian-dotfiles
-configs="$(ls -1d ~/debian-dotfiles/*/ 2>/dev/null | xargs -n1 basename)"
+configs="$(ls -1d ~/tonybtw/repos/*/ 2>/dev/null | xargs -n1 basename)"
 [ -n "$configs" ] || exit 0
 
-chosen="$(printf '%s\n' $configs | dmenu -i -c -vi -bw 3 -W 800 -l 30 -h 40 -F -fn "JetBrainsMono Nerd Font:size=16" -p 'configs:')"
+chosen="$(printf '%s\n' $configs | dmenu -i -c -vi -bw 3 -W 600 -l 30 -h 40 -F -fn "JetBrainsMono Nerd Font:size=16" -p 'repos:')"
 [ -n "$chosen" ] || exit 0
 
-dir="$HOME/debian-dotfiles/$chosen"
+dir="$HOME/tonybtw/repos/$chosen"
 
 # If inside tmux: switch or create
 if [ "${TMUX-}" ]; then
@@ -40,4 +40,5 @@ if tmux has-session -t "$chosen" 2>/dev/null; then
 else
   exec st -e tmux new-session -s "$chosen" -c "$dir" "nvim ."
 fi
+
 
