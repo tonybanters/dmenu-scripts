@@ -6,8 +6,8 @@ set -eu
 PERS_FILE="${PERS_FILE:-$HOME/.config/bookmarks/personal.txt}"
 WORK_FILE="${WORK_FILE:-$HOME/.config/bookmarks/work.txt}"
 
-# dmenu look
-DMENU="dmenu -i -vi -c -bw 3 -W 900 -l 30 -h 40 -F -fn 'JetBrainsMono Nerd Font:size=16' -p 'Bookmarks:'"
+# Rofi command
+ROFI="rofi -dmenu -p 'Bookmarks:'"
 
 # Browsers
 # Choose your browsers accordingly
@@ -51,7 +51,7 @@ emit() {
 choice="$({
   emit personal "$PERS_FILE"
   emit work     "$WORK_FILE"
-} | sort | eval "$DMENU" || true)"
+} | sort | eval "$ROFI" || true)"
 
 [ -n "$choice" ] || exit 0
 

@@ -1,0 +1,236 @@
+#+TITLE: dmenu/rofi Utilities — README
+#+AUTHOR: Tony
+
+This repo contains *three* tiny scripts (each with a =dmenu= and a =rofi= variant):
+
+1) =bookmarks-<menu>.sh=: quick launcher for personal/work bookmarks
+2) =repos-<menu>.sh=: pick a repo directory and attach/create a =tmux= session in it
+3) =tmux-<menu>.sh=: “sessionizer” for creating/switching =tmux= sessions
+
+Throughout, you can specify your terminal as needed. See [[#terminal]].
+
+* Table of Contents :TOC_2:
+- [[#requirements][Requirements]]
+- [[#terminal-selection-st-alacritty-kitty-etc][Terminal selection (st, alacritty, kitty, etc.)]]
+- [[#installation--files][Installation & files]]
+- [[#1-bookmarks-menush][1) =bookmarks-<menu>.sh=]]
+  - [[#bookmark-file-format][Bookmark file format]]
+  - [[#configuration][Configuration]]
+  - [[#usage][Usage]]
+- [[#2-repos-menush][2) =repos-<menu>.sh=]]
+  - [[#configuration-1][Configuration]]
+  - [[#usage-1][Usage]]
+- [[#3-tmux-menush-sessionizer][3) =tmux-<menu>.sh= (“sessionizer”)]]
+  - [[#configuration-2][Configuration]]
+  - [[#usage-2][Usage]]
+- [[#dmenu-vs-rofi-flags--examples][dmenu vs rofi (flags & examples)]]
+- [[#optional-desktop-entries--keybinds][Optional: desktop entries & keybinds]]
+  - [[#desktop-entries][Desktop entries]]
+  - [[#keybinds][Keybinds]]
+- [[#troubleshooting][Troubleshooting]]
+
+* Requirements
+- POSIX shell (/bin/sh)
+- =tmux= (for =repos-*= and =tmux-*=)
+- One of: =dmenu= or =rofi=
+- A terminal emulator (e.g., =st=, =alacritty=, =kitty=)
+- Optional: =firefox=, =brave= (or =brave-browser=), =xdg-open= for bookmarks
+
+* Terminal selection (st, alacritty, kitty, etc.) :terminal:
+All scripts are written to allow specifying your terminal. If a script hard-codes =st= in the example below, simply:
+- Set an environment variable before launching, e.g.:
+  #+begin_src sh
+  export TERMINAL="alacritty"
+  #+end_src
+- Or change the =terminal= variable near the top of the script:
+  #+begin_src sh
+  terminal="${TERMINAL:-st}"   # prefer $TERMINAL, else use st
+  #+end_src
+
+Anywhere you see =pkill -x st= or =exec st -e …= you can safely swap =st= for your terminal. If your terminal supports =-e= differently, adjust accordingly (e.g., Kitty: =kitty tmux …=; Alacritty: =alacritty -e tmux …=).
+
+* Installation & files :installation:
+1. Put the scripts somewhere on your =$PATH=, e.g. =~/bin=.
+2. Make them executable:
+   #+begin_src sh
+   chmod +x ~/bin/bookmarks-dmenu.sh \
+            ~/bin/bookmarks-rofi.sh \
+            ~/bin/repos-dmenu.sh    \
+            ~/bin/repos-rofi.sh     \
+            ~/bin/tmux-dmenu.sh     \
+            ~/bin/tmux-rofi.sh
+   #+end_src
+3. For bookmarks, the first run will create example files if missing:
+   - =~/.config/bookmarks/personal.txt=
+   - =~/.config/bookmarks/work.txt=
+
+* 1) =bookmarks-<menu>.sh=
+Quickly search and open bookmarks from *personal* and *work* lists. The script:
+- Aggregates lines from personal/work files
+- Normalizes “display :: target” lines (or raw URLs)
+- Lets you pick from a fuzzy-ish menu
+- Chooses a browser based on the tag (=personal= → Firefox, =work= → Brave); falls back to =xdg-open=
+
+** Bookmark file format
+Each line is one entry. Blank lines or lines beginning with =#= are ignored.
+
+- With display:
+  #+begin_example
+  Some Site :: https://example.com/page
+  #+end_example
+- Raw URL (display = URL):
+  #+begin_example
+  https://news.ycombinator.com
+  #+end_example
+
+The script emits entries like:
+#+begin_example
+[personal] Some Site :: https://example.com/page
+[work]     Docs :: https://nixos.org/manual/
+#+end_example
+
+** Configuration
+Environment variables (override as needed):
+#+begin_src sh
+PERS_FILE="$HOME/.config/bookmarks/personal.txt"
+WORK_FILE="$HOME/.config/bookmarks/work.txt"
+
+# Browsers (detected automatically if installed)
+FIREFOX="$(command -v firefox || true)"
+BRAVE="$(command -v brave || command -v brave-browser || true)"
+FALLBACK="$(command -v xdg-open || echo firefox)"
+#+end_src
+
+You can change which browser opens which tag by editing the =case "$tag" in …= section.
+
+** Usage
+- dmenu:
+  #+begin_src sh
+  bookmarks-dmenu.sh
+  #+end_src
+- rofi:
+  #+begin_src sh
+  bookmarks-rofi.sh
+  #+end_src
+
+Pick an entry and it opens in the appropriate browser. If a scheme is missing, =https://= is assumed.
+
+* 2) =repos-<menu>.sh=
+Presents a list of directories under =~/repos= and opens a dedicated =tmux= session per project. It enforces a “single terminal” workflow by killing any existing instance of your chosen terminal, then starting a clean one attached to the chosen session.
+
+** Configuration
+- Repo root:
+  #+begin_src sh
+  REPO_ROOT="$HOME/repos"
+  #+end_src
+- Terminal (see [[#terminal][Terminal selection]]):
+  #+begin_src sh
+  terminal="${TERMINAL:-st}"
+  #+end_src
+- Menu prompt & layout are set via the menu’s flags (see [[#dmenu-vs-rofi][dmenu vs rofi]]).
+
+** Usage
+- dmenu:
+  #+begin_src sh
+  repos-dmenu.sh
+  #+end_src
+- rofi:
+  #+begin_src sh
+  repos-rofi.sh
+  #+end_src
+
+Flow:
+1. Pick a directory from =~/repos=
+2. Script kills any existing =$terminal= (optional “one terminal at a time” behavior)
+3. Launches =tmux new-session -As "<repo-name>" -c "<repo-dir>"= inside =$terminal=
+
+* 3) =tmux-<menu>.sh= (“sessionizer”)
+Lists existing =tmux= sessions, plus a “Create new session…” option. Works both *inside* and *outside* tmux.
+
+** Configuration :tmux-config:
+- Terminal (outside-tmux attach/create path):
+  #+begin_src sh
+  terminal="${TERMINAL:-st}"
+  #+end_src
+- Menu binary & options are configurable (see [[#dmenu-vs-rofi][dmenu vs rofi]]).
+
+** Usage
+- dmenu:
+  #+begin_src sh
+  tmux-dmenu.sh
+  #+end_src
+- rofi:
+  #+begin_src sh
+  tmux-rofi.sh
+  #+end_src
+
+Behavior:
+- Inside =tmux=:
+  - “Create new …” → creates a *detached* session if it doesn’t exist, then switches client to it
+  - Selecting an existing session just switches the client
+- Outside =tmux=:
+  - Kills existing =${terminal}= (optional “one terminal” behavior)
+  - “Create new …” → starts =${terminal} -e tmux new-session -s "<name>"=
+  - Existing session → =${terminal} -e tmux attach -t "<name>"=
+
+* dmenu vs rofi (flags & examples)
+Both variants do the same thing; only the menu program/flags differ.
+
+- dmenu example:
+  #+begin_src sh
+  dmenu -i -vi -c -bw 3 -W 900 -l 30 -h 40 -F -fn 'JetBrainsMono Nerd Font:size=16' -p 'Bookmarks:'
+  #+end_src
+
+- rofi equivalent (=rofi -dmenu= mode):
+  #+begin_src sh
+  rofi -dmenu -i -p 'Bookmarks:' -theme-str 'listview { lines: 30; }' \
+       -font 'JetBrainsMono Nerd Font 16'
+  #+end_src
+
+Notes:
+- =-l 30= (dmenu “lines”) → use a rofi theme or =-theme-str= to set visible rows
+- Font names are similar; for rofi, omit the colon syntax
+- Centering in rofi is controlled by theme; you can ship a =.rasi= or use =-theme-str=
+- If you want near-identical looks, create a tiny =.rasi= theme and point both rofi variants at it
+
+* Optional: desktop entries & keybinds
+** Desktop entries
+Create =~/.local/share/applications/bookmarks.desktop=:
+#+begin_src ini
+[Desktop Entry]
+Type=Application
+Name=Bookmarks (dmenu)
+Exec=/home/tony/bin/bookmarks-dmenu.sh
+Terminal=false
+Categories=Utility;
+#+end_src
+
+Do the same for =repos-*= and =tmux-*=.
+
+** Keybinds
+- dwm (example):
+  #+begin_src c
+  { MODKEY,                       XK_b,      spawn, SHCMD("bookmarks-dmenu.sh") },
+  { MODKEY,                       XK_p,      spawn, SHCMD("repos-dmenu.sh")     },
+  { MODKEY|ShiftMask,             XK_p,      spawn, SHCMD("tmux-dmenu.sh")      },
+  #+end_src
+- qtile (example):
+  #+begin_src python
+  Key([mod], "b", lazy.spawn("bookmarks-rofi.sh")),
+  Key([mod], "p", lazy.spawn("repos-rofi.sh")),
+  Key([mod, "shift"], "p", lazy.spawn("tmux-rofi.sh")),
+  #+end_src
+
+* Troubleshooting
+- “No =tmux= found”: install =tmux= and ensure it’s on =$PATH=
+- “Menu not found”: install either =dmenu= or =rofi= (match the script you’re calling)
+- Terminal doesn’t open:
+  - Verify your =TERMINAL= supports =-e= the way you invoke it
+  - Replace =pkill -x st= with your terminal name or remove the “one terminal” behavior
+- Bookmarks not opening in the desired browser:
+  - Edit the =case "$tag" in …= block (e.g., use Firefox for both, or flip them)
+  - Ensure =firefox= / =brave= resolve via =command -v …=; otherwise the script falls back to =xdg-open=
+- Rofi layout looks cramped:
+  - Use a small =.rasi= theme or pass =-theme-str= to adjust list rows, padding, and centering
+
+That’s it. Each script is intentionally small and easy to modify—tweak fonts, prompts, or behavior to match your setup. Adjust your terminal as needed via =TERMINAL= or the =terminal= variable near the top of each script.
