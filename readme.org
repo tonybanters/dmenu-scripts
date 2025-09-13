@@ -1,9 +1,11 @@
-#+TITLE: dmenu/rofi Utilities — README
+#+TITLE: dmenu/rofi scripts — README
 #+AUTHOR: Tony
 
-[[https://ko-fi.com/tonybtw][[[https://img.shields.io/badge/Support-Ko--fi-ff5e5b?logo=ko-fi&logoColor=white&style=for-the-badge]]]]
+* YouTube Video Showcasing:
+[[https://www.youtube.com/watch?v=1hPPTnYtAwU][YouTube Showcase]]
 
 * Table Of Contents :toc:
+- [[#youtube-video-showcasing][YouTube Video Showcasing:]]
 - [[#intro][Intro]]
 - [[#dependencies][Dependencies]]
 - [[#setup--conventions][Setup & Conventions]]
@@ -184,10 +186,6 @@ keys = [
 
 If these scripts save you time, you can support my work on Ko-fi:
 
-[[https://ko-fi.com/tonybtw][[[https://ko-fi.com/img/githubbutton_sm.svg]]]]
+[[https://ko-fi.com/tonybtw][ko-fi.com/tonybtw]]
 
-[https://ko-fi.com/tonybtw][
-  [[https://img.shields.io/badge/Support-Ko--fi-ff5e5b?logo=ko-fi&logoColor=white&style=for-the-badge]]
-]]
-
-- [[https://ko-fi.com/tonybtw][ko-fi.com/tonybtw]]
+Or check out my website: [[https://www.tonybtw.com][tonybtw]]
