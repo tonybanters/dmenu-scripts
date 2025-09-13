@@ -1,64 +1,193 @@
 #+TITLE: dmenu/rofi Utilities — README
 #+AUTHOR: Tony
 
+[[https://ko-fi.com/tonybtw][[[https://img.shields.io/badge/Support-Ko--fi-ff5e5b?logo=ko-fi&logoColor=white&style=for-the-badge]]]]
+
 * Table Of Contents :toc:
-- [[#intro][Intro:]]
+- [[#intro][Intro]]
+- [[#dependencies][Dependencies]]
+- [[#setup--conventions][Setup & Conventions]]
 - [[#find-repos][Find Repos]]
   - [[#dmenu-repossh][dmenu-repos.sh]]
+  - [[#rofi-repossh][rofi-repos.sh]]
+- [[#tmux-sessions][TMUX Sessions]]
+  - [[#dmenu-sessionssh][dmenu-sessions.sh]]
+  - [[#rofi-sessionssh][rofi-sessions.sh]]
+- [[#bookmarks-workpersonal][Bookmarks (work/personal)]]
+  - [[#dmenu-bookmarkssh][dmenu-bookmarks.sh]]
+  - [[#rofi-bookmarkssh][rofi-bookmarks.sh]]
+- [[#where-to-bind-these-dwm--qtile][Where to bind these (DWM / Qtile)]]
+  - [[#dwm][DWM]]
+  - [[#qtile][Qtile]]
+- [[#tips--troubleshooting][Tips & Troubleshooting]]
+- [[#support][Support]]
 
-* Intro:
-This repo contains 3 scripts (with 2 variants each.)
+* Intro
+This repo contains 3 scripts (with 2 variants each):
 
-1. repos
-2. sessions
-3. bookmarks
+1. ~repos~ — fuzzy-pick a repo and jump into a tmux session there
+2. ~sessions~ — list existing tmux sessions and attach/create
+3. ~bookmarks~ — pick from a *personal* or *work* bookmark list and open in the matching browser
 
-All of these scripts can be run with dmenu, or rofi. There are 6 total scripts, 2 for each script.
+All scripts have both *dmenu* and *rofi* variants (6 scripts total).
+
+* Dependencies
+:PROPERTIES:
+:ID: deps
+:END:
+- ~tmux~ (for ~repos~ / ~sessions~)
+- One launcher: ~dmenu~ or ~rofi~
+- A terminal (~st~ by default; configurable)
+- ~xdg-open~ (only if you later want to open URLs via system handler)
+
+* Setup & Conventions
+:PROPERTIES:
+:ID: setup
+:END:
+- Terminal is configurable via ~terminal="st"~ (or honor ~$TERMINAL~).
+- Default repos directory is ~$HOME/repos~; change with ~repos_dir="$HOME/dev"~ or set ~$REPOS_DIR~.
+- Bookmark files live at:
+  - Personal: =~/.config/bookmarks/personal.txt=
+  - Work:     =~/.config/bookmarks/work.txt=
+  Each file is one *URL per line*. (Optionally, lines may be ~label<tab>url~; the script will use the URL part.)
+- Scripts are POSIX ~sh~. Mark them executable and put on ~$PATH~.
+
+#+begin_src sh
+chmod +x dmenu-*.sh rofi-*.sh
+# or keep them in this repo and call with absolute paths
+#+end_src
 
 * Find Repos
-This script takes a list of your repos (from =/path/to/repos/), and opens it as a list in dmenu/rofi. From here, you can use fuzzy finding on that, or navigate it with vim binds if you have the correct dmenu/rofi flags set. When you hit enter on one of the repos, it will open a tmux session at that repo. If a tmux session does not exist yet at that repo, it will create one.
+This reads your repos from ~/$REPOS_DIR~ (default ~$HOME/repos~), shows them in dmenu/rofi, and spawns a terminal that attaches to (or creates) a tmux session rooted at that repo.
 
-Scripts:
+Below are the relevant sections of each script and where to change the variables according to your terminal, flags, repos directory, etc.
+
 ** dmenu-repos.sh
-Relavent modifications will go here:
+:PROPERTIES:
+:ID: dmenu-repos
+:END:
 #+begin_src sh
-# Set your terminal:
-terminal="st"
-# Set your dmenu flags
-dmenu_flags="-i -vi -c -bw 3 -W 600 -l 30 -h 40 -F -fn 'JetBrainsMono Nerd Font:size=16' -p 'Projects:'"
-# Pick repo
-configs="$(ls -1d "$HOME"/repos/*/ 2>/dev/null | xargs -n1 basename)"
+# --- config ---
+terminal="${TERMINAL:-st}"
+dmenu_flags='-i -c -bw 3 -W 600 -l 30 -h 40 -F -fn "JetBrainsMono Nerd Font:size=16" -p "Projects:"'
+repos_dir="${REPOS_DIR:-$HOME/repos}"
 #+end_src
 
-*** How to use:
- - Change `terminal` to whatever terminal program you are running. (ie: `alacritty`, `xterm`, `urxvt`)
- - Change `dmenu_flags` to whatever dmenu flags you want to pass in. The sane defaults I would say are `-l 30` to list it vertically for 30. The rest will be documented as dmenu patches in a future build.
- - Make sure your repos are in `$HOME/repos` or just change that line in configs to `/path/to/repos`
- - Run the script!
+** rofi-repos.sh
+#+begin_src sh
+# --- config ---
+terminal="${TERMINAL:-st}"
+rofi_flags='-dmenu -i -p "Projects:" -matching fuzzy -no-custom'
+repos_dir="${REPOS_DIR:-$HOME/repos}"
+#+end_src
 
-*** Where to bind this:
-You can take this script and either keep it in this repo, or you can move it to `/usr/local/bin` and run `chmod +x` on it. Then in whatever window manager you are using, just add it to the binds as a script.
+* TMUX Sessions
+List existing tmux sessions, attach to one, or create a new named session on the fly.
 
-Examples:
+** dmenu-sessions.sh
+#+begin_src sh
+# --- config ---
+terminal="${TERMINAL:-st}"
+dmenu_flags='-i -c -l 15 -p "tmux:"'
+#+end_src
 
-=DWM=
+** rofi-sessions.sh
+#+begin_src sh
+# --- config ---
+terminal="${TERMINAL:-st}"
+rofi_flags='-dmenu -i -p "tmux:" -matching fuzzy -no-custom'
+#+end_src
+
+* Bookmarks (work/personal)
+Picks *which list* (Personal/Work), then shows bookmarks from the corresponding file and opens them in the matching browser.
+
+- Files:
+  - Personal list: =~/.config/bookmarks/personal.txt=
+  - Work list:     =~/.config/bookmarks/work.txt=
+- Format: one *URL per line*. (Optional: ~label<tab>url~; the script will extract the URL.)
+
+** dmenu-bookmarks.sh
+#+begin_src sh
+# --- config ---
+terminal="${TERMINAL:-st}"
+dmenu_flags='-i -c -l 20 -p "Bookmarks:"'
+
+# bookmark sources
+personal_file="${BOOKMARKS_PERSONAL_FILE:-$HOME/.config/bookmarks/personal.txt}"
+work_file="${BOOKMARKS_WORK_FILE:-$HOME/.config/bookmarks/work.txt}"
+
+# which browsers to use for each list
+personal_browser="${PERSONAL_BROWSER:-firefox}"
+work_browser="${WORK_BROWSER:-brave}"
+#+end_src
+
+** rofi-bookmarks.sh
+#+begin_src sh
+# --- config ---
+terminal="${TERMINAL:-st}"
+rofi_flags='-dmenu -i -p "Bookmarks:" -matching fuzzy -no-custom'
+
+# bookmark sources
+personal_file="${BOOKMARKS_PERSONAL_FILE:-$HOME/.config/bookmarks/personal.txt}"
+work_file="${BOOKMARKS_WORK_FILE:-$HOME/.config/bookmarks/work.txt}"
+
+# which browsers to use for each list
+personal_browser="${PERSONAL_BROWSER:-firefox}"
+work_browser="${WORK_BROWSER:-chromium}"
+#+end_src
+
+* Where to bind these (DWM / Qtile)
+:PROPERTIES:
+:ID: binds
+:END:
+** DWM
 #+begin_src c
-
 // With Keychord Patch:
-&((Keychord){2, {{MODKEY, XK_f}, {0, XK_f}}, spawn, SHCMD("$HOME/repos/dmenu-scripts/repos-dmenu.sh")}),
+&((Keychord){2, {{MODKEY, XK_f}, {0, XK_f}}, spawn, SHCMD("$HOME/.local/bin/dmenu-repos.sh")}),
+&((Keychord){2, {{MODKEY, XK_f}, {0, XK_s}}, spawn, SHCMD("$HOME/.local/bin/dmenu-sessions.sh")}),
+&((Keychord){2, {{MODKEY, XK_f}, {0, XK_b}}, spawn, SHCMD("$HOME/.local/bin/dmenu-bookmarks.sh")}),
 
 // Without Keychord Patch:
-{ MODKEY,                       XK_p,      spawn, SHCMD("repos-dmenu.sh")     },
+{ MODKEY, XK_p, spawn, SHCMD("$HOME/.local/bin/dmenu-repos.sh") },
+{ MODKEY, XK_s, spawn, SHCMD("$HOME/.local/bin/dmenu-sessions.sh") },
+{ MODKEY, XK_b, spawn, SHCMD("$HOME/.local/bin/dmenu-bookmarks.sh") },
 #+end_src
 
-=QTILE=
+** Qtile
 #+begin_src python
+from libqtile.config import Key, KeyChord
+from libqtile.lazy import lazy
+mod = "mod4"
 
-# Without Keychord
-Key([mod], "p", lazy.spawn("repos-dmenu.sh")),
+keys = [
+    # Single keys
+    Key([mod], "p", lazy.spawn("dmenu-repos.sh"), desc="Repos (dmenu)"),
+    Key([mod], "s", lazy.spawn("dmenu-sessions.sh"), desc="Sessions (dmenu)"),
+    Key([mod], "b", lazy.spawn("dmenu-bookmarks.sh"), desc="Bookmarks (dmenu)"),
 
-# With Keychords
-KeyChord([mod], "f", [
-        Key([], "f", lazy.spawn("repos-dmenu.sh")),
-], mode="dmenu_scripts"),  # 'mode' name shows in the Chord widget (optional)
+    # KeyChord leader on Mod+f
+    KeyChord([mod], "f", [
+        Key([], "f", lazy.spawn("dmenu-repos.sh"),      desc="Repos"),
+        Key([], "s", lazy.spawn("dmenu-sessions.sh"),   desc="Sessions"),
+        Key([], "b", lazy.spawn("dmenu-bookmarks.sh"),  desc="Bookmarks"),
+    ], mode="DMENU"),
+]
 #+end_src
+
+* Tips & Troubleshooting
+- **Repos don’t show up:** check ~repos_dir~ and ensure directories exist one level deep.
+- **tmux attach fails:** make sure tmux is installed; scripts create the session if missing.
+- **Bookmarks open in wrong browser:** set ~PERSONAL_BROWSER~ / ~WORK_BROWSER~ or edit the variables at the top of the bookmarks scripts.
+- **Rofi/Dmenu theming:** append your theme flags to ~rofi_flags~ / ~dmenu_flags~.
+
+* Support
+
+If these scripts save you time, you can support my work on Ko-fi:
+
+[[https://ko-fi.com/tonybtw][[[https://ko-fi.com/img/githubbutton_sm.svg]]]]
+
+[https://ko-fi.com/tonybtw][
+  [[https://img.shields.io/badge/Support-Ko--fi-ff5e5b?logo=ko-fi&logoColor=white&style=for-the-badge]]
+]]
+
+- [[https://ko-fi.com/tonybtw][ko-fi.com/tonybtw]]
